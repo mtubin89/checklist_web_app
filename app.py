@@ -115,24 +115,51 @@ def index():
         return redirect('/')
 
     elif 'user_id' in session:
+        # Fetch incomplete tasks
+        incomplete_rows = [dict(row) for row in cur.execute('''select *, (julianday(date)-julianday('now')+1) as days_to_complete 
+                                    from tasks
+                                    where user_id=? and complete=0 
+                                    order by date asc;''',
+                                                            [session['user_id']]).fetchall()]
 
-        rows = [dict(row) for row in cur.execute('''select *, (julianday(date)-julianday('now')+1) as days_to_complete 
-                                from tasks
-                                where user_id=? and complete=0 
-                                order by date asc;''',
-                                                 [session['user_id']]).fetchall()]
-        data = [[row for row in rows if row['days_to_complete'] < 0],
-                [row for row in rows if row['days_to_complete'] >= 0 and row['days_to_complete'] < 1],
-                [row for row in rows if row['days_to_complete'] >= 1 and row['days_to_complete'] < 2],
-                [row for row in rows if row['days_to_complete'] >= 2 and row['days_to_complete'] < 6],
-                [row for row in rows if row['days_to_complete'] >= 7]]
+        # Fetch completed tasks
+        completed_rows = [dict(row) for row in cur.execute('''select *
+                                    from tasks 
+                                    where user_id=? and complete=1
+                                    order by date asc;''',
+                                                           [session['user_id']]).fetchall()]
 
-        # removed for now - ability to restore completed tasks
-        # finished = [dict(row) for row in cur.execute('''select *
-        #                        from tasks 
-        #                        where user_id=? and complete=1
-        #                        order by date asc;''', 
-        #            [session['user_id']]).fetchall()]
+        data = {
+            'incomplete': {
+                'overdue': [row for row in incomplete_rows if row['days_to_complete'] < 0],
+                'today': [row for row in incomplete_rows if 0 <= row['days_to_complete'] < 1],
+                'tomorrow': [row for row in incomplete_rows if 1 <= row['days_to_complete'] < 2],
+                'this_week': [row for row in incomplete_rows if 2 <= row['days_to_complete'] < 6],
+                'future': [row for row in incomplete_rows if row['days_to_complete'] >= 7]
+            },
+            'completed': completed_rows
+        }
+
+
+        # rows = [dict(row) for row in cur.execute('''select *, (julianday(date)-julianday('now')+1) as days_to_complete
+        #                         from tasks
+        #                         where user_id=? and complete=0
+        #                         order by date asc;''',
+        #                                          [session['user_id']]).fetchall()]
+        # data = [[row for row in rows if row['days_to_complete'] < 0],
+        #         [row for row in rows if row['days_to_complete'] >= 0 and row['days_to_complete'] < 1],
+        #         [row for row in rows if row['days_to_complete'] >= 1 and row['days_to_complete'] < 2],
+        #         [row for row in rows if row['days_to_complete'] >= 2 and row['days_to_complete'] < 6],
+        #         [row for row in rows if row['days_to_complete'] >= 7]]
+        #
+        # # removed for now - ability to restore completed tasks
+        # # finished = [dict(row) for row in cur.execute('''select *
+        # #                        from tasks
+        # #                        where user_id=? and complete=1
+        # #                        order by date asc;''',
+        # #            [session['user_id']]).fetchall()]
+
+
         return render_template('index.html', data=data)  # , finished=finished)
     else:
         return render_template('login.html')

@@ -46,6 +46,22 @@
     {% endfor %}
 {% endif %}
 
+
+<!--###################################-->
+
+<!-- Add this section to display completed tasks -->
+{% if data.completed %}
+  <h2>Completed Tasks</h2>
+  <ul>
+    {% for row in data.completed %}
+      <li>{{ row.title }} - {{ row.date }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<!--#####################################-->
+
+
 {% if finished|length > 0 %}
     <details>
     <summary>Complete:</summary>
