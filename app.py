@@ -365,3 +365,8 @@ def logout():
     # Forget any user_id
     session.clear()
     return redirect('/')
+
+
+
+if __name__ == "__main__":
+    app.run()
